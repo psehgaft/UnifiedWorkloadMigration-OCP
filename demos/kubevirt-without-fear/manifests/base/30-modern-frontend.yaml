@@ -1,0 +1,126 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: modern-frontend-code
+data:
+  app.py: |
+    import html
+    import json
+    import os
+    import socket
+    import urllib.request
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    BACKEND = os.getenv("BACKEND_URL", "http://legacy-api:8080/")
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            status = 200
+            try:
+                with urllib.request.urlopen(BACKEND, timeout=3) as response:
+                    backend = json.loads(response.read().decode())
+            except Exception as exc:
+                status = 503
+                backend = {"error": str(exc), "runtime": "virtual-machine"}
+
+            payload = {
+                "frontend_runtime": "container",
+                "frontend_pod": socket.gethostname(),
+                "backend": backend,
+            }
+            if self.path == "/api":
+                body = json.dumps(payload, indent=2).encode()
+                content_type = "application/json"
+            else:
+                backend_pretty = html.escape(json.dumps(backend, indent=2))
+                body = f"""<!doctype html>
+                <html><head><title>KubeVirt Without Fear</title>
+                <style>body{{font-family:system-ui;margin:3rem;max-width:900px}}code,pre{{background:#f2f2f2;padding:1rem}}.ok{{color:#3e8635}}</style>
+                </head><body><h1>KubeVirt Without Fear</h1>
+                <h2 class='ok'>One platform, two runtimes, one application</h2>
+                <p><b>Container frontend pod:</b> {socket.gethostname()}</p>
+                <p><b>VM service:</b> {BACKEND}</p><pre>{backend_pretty}</pre>
+                <p>The frontend reached the VM through Kubernetes DNS and a ClusterIP Service.</p>
+                </body></html>""".encode()
+                content_type = "text/html; charset=utf-8"
+            self.send_response(status)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, fmt, *args):
+            return
+
+    HTTPServer(("0.0.0.0", 8080), Handler).serve_forever()
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: modern-frontend
+  labels:
+    app: modern-frontend
+    app.kubernetes.io/part-of: kubevirt-without-fear
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: modern-frontend
+  template:
+    metadata:
+      labels:
+        app: modern-frontend
+        app.kubernetes.io/name: modern-frontend
+        app.kubernetes.io/component: frontend
+        app.kubernetes.io/part-of: kubevirt-without-fear
+    spec:
+      containers:
+        - name: frontend
+          image: registry.access.redhat.com/ubi9/python-312:latest
+          imagePullPolicy: IfNotPresent
+          command: ["python3", "/opt/app/app.py"]
+          env:
+            - name: BACKEND_URL
+              value: http://legacy-api:8080/
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /api
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          volumeMounts:
+            - name: code
+              mountPath: /opt/app
+              readOnly: true
+      volumes:
+        - name: code
+          configMap:
+            name: modern-frontend-code
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: modern-frontend
+  labels:
+    app.kubernetes.io/part-of: kubevirt-without-fear
+spec:
+  selector:
+    app: modern-frontend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

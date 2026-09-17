@@ -1,0 +1,6 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubevirt-without-fear
+  labels:
+    app.kubernetes.io/part-of: kubevirt-without-fear

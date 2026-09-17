@@ -1,0 +1,16 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: modern-frontend
+  namespace: kubevirt-without-fear
+  labels:
+    app.kubernetes.io/part-of: kubevirt-without-fear
+spec:
+  to:
+    kind: Service
+    name: modern-frontend
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

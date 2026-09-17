@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: kubevirt-without-fear
+resources:
+  - 00-namespace.yaml
+  - 10-legacy-vm.yaml
+  - 20-legacy-service.yaml
+  - 30-modern-frontend.yaml
+  - 40-network-policy.yaml
