@@ -10,7 +10,7 @@ This demo accompanies the DevConf.US session **“KubeVirt Without Fear: Running
 |---|---|
 | One API and desired-state model | `oc get vm,vmi,dv,pvc,deploy,pod,svc,route` returns both workload types and their dependencies. |
 | Common service discovery | The frontend reaches the VM through `legacy-api.$NAMESPACE.svc`. |
-| Persistent VM storage | A CDI `DataVolume` backs the boot disk and the request counter survives VMI recreation. |
+| Persistent VM storage | A CDI `DataVolume` backs the boot disk; a unique marker is written before VMI recreation and read back afterward. |
 | Workload-aware lifecycle | Kubernetes manages the Deployment; KubeVirt manages VM/VMI start, stop, restart, and reconciliation. |
 | Common policy surface | Kubernetes labels, Services, NetworkPolicy, RBAC, events, and metrics apply across the application. |
 | Recovery | Deleting the VMI causes the `VirtualMachine` controller to create a replacement instance. |
@@ -48,6 +48,7 @@ The Route exposes the container frontend only. The VM API remains a `ClusterIP` 
 - Outbound access to `quay.io/containerdisks/fedora:latest` and `registry.access.redhat.com/ubi9/python-312:latest`, or mirrored equivalents.
 - `oc`, plus `virtctl` for the optional live-migration step.
 - Permissions to create a project, VM, DataVolume, PVC, Deployment, Service, Route, and NetworkPolicy.
+- A disposable demo namespace. The recovery step intentionally deletes its VMI; cleanup deletes its PVC and data.
 
 Run the preflight check:
 
@@ -85,10 +86,18 @@ The guided flow:
 
 1. Shows the unified inventory.
 2. Calls the public Route and displays the frontend pod and VM backend identity.
-3. Shows the VM’s persistent request counter.
+3. Writes a unique marker to the VM boot disk.
 4. Deletes the VMI to demonstrate controller reconciliation.
-5. Calls the application again and confirms that the VM disk state survived.
-6. Attempts live migration only when `virtctl` exists and the VMI is eligible.
+5. Calls the application again and verifies the exact marker survived VMI recreation.
+6. Attempts live migration only when `virtctl` exists and the VMI is eligible; completion requires a different node.
+
+The frontend health endpoint does not call the VM. This keeps readiness checks from changing the demonstration counter. The marker is the definitive persistence proof.
+
+## How this relates to MTV migration
+
+The included VM is **created for the demo**. It represents a possible target operating state; it is not a VM transported from vSphere. The [unified migration guide](../../docs/unified-migration-guide.md) and [MTV runbook](../../docs/mtv-migration-runbook.md) cover the real source assessment, mappings, plan, migration, cutover, and rollback. If you have a completed MTV pilot, present its `Provider`, `NetworkMap`, `StorageMap`, `Plan`, and `Migration` evidence before running this post-migration operating demo. Do not claim the scripted VM was migrated by MTV.
+
+The guest account is password locked. The demo exercises its HTTP API through the in-cluster Service; it does not require console or SSH credentials.
 
 ## Upstream KubeVirt mode
 
