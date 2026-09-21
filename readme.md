@@ -40,7 +40,7 @@ Detailed assets remain available:
 
 ### KubeVirt Without Fear: Running VMs and Containers Together on One Platform
 
-The demo under [`demos/kubevirt-without-fear`](demos/kubevirt-without-fear/) represents the **post-migration operating state**. It deploys:
+The demo under [`demos/kubevirt-without-fear`](demos/kubevirt-without-fear/) represents the **post-migration operating model** with a fresh example VM. It does not perform source transport. It deploys:
 
 - a Fedora-based `VirtualMachine` named `legacy-api`, managed by KubeVirt/OpenShift Virtualization;
 - a persistent CDI `DataVolume` used as the VM boot disk;
@@ -48,7 +48,7 @@ The demo under [`demos/kubevirt-without-fear`](demos/kubevirt-without-fear/) rep
 - a containerized `modern-frontend` deployment that calls the VM API;
 - an OpenShift `Route` that exposes only the frontend;
 - network policies that restrict east-west access;
-- a guided Day-2 flow for lifecycle, recovery, observation, and conditional live migration.
+- a guided Day-2 flow that writes a unique marker to the VM disk, recreates the VMI, verifies the marker, and conditionally attempts live migration.
 
 ```mermaid
 flowchart LR
@@ -79,10 +79,10 @@ See the [demo guide](demos/kubevirt-without-fear/README.md) and the [presenter r
 | Storage and network mappings | CDI DataVolume, PVC, Service, Route, and NetworkPolicy |
 | Pilot/wave execution | Repeatable manifest and script-driven deployment |
 | VM boot and application validation | VM readiness and container-to-VM connectivity |
-| Cutover and recovery plan | Desired-state VMI recovery and persistent data verification |
+| Cutover and recovery plan | Desired-state VMI recovery and exact persistent marker verification |
 | Mobility constraints | Conditional live migration based on reported eligibility |
 
-The demo does not simulate VMware transport. MTV performs that migration. The demo proves what the migrated workload looks like and how it is operated after it reaches OpenShift Virtualization.
+The demo does not simulate VMware transport. MTV performs that migration. The demo proves how an equivalent VM workload can be operated after reaching OpenShift Virtualization; do not present its newly created Fedora VM as an MTV migration result.
 
 ## Primary references
 
