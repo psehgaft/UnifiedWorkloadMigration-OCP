@@ -15,6 +15,14 @@ data:
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
+            if self.path == "/healthz":
+                body = b"ok"
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
             status = 200
             try:
                 with urllib.request.urlopen(BACKEND, timeout=3) as response:
@@ -87,7 +95,7 @@ spec:
               containerPort: 8080
           readinessProbe:
             httpGet:
-              path: /api
+              path: /healthz
               port: http
             initialDelaySeconds: 5
             periodSeconds: 5
