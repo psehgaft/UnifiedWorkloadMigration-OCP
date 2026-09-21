@@ -76,9 +76,8 @@ spec:
             userData: |-
               #cloud-config
               user: fedora
-              password: kubevirt
-              chpasswd:
-                expire: false
+              lock_passwd: true
+              ssh_pwauth: false
               write_files:
                 - path: /usr/local/bin/legacy-api.py
                   permissions: '0755'
@@ -87,14 +86,33 @@ spec:
                     import json
                     import os
                     import socket
+                    import urllib.parse
                     from http.server import BaseHTTPRequestHandler, HTTPServer
 
                     STATE_DIR = "/var/lib/legacy-api"
                     COUNTER = os.path.join(STATE_DIR, "counter")
+                    PROOF = os.path.join(STATE_DIR, "proof")
                     os.makedirs(STATE_DIR, exist_ok=True)
 
                     class Handler(BaseHTTPRequestHandler):
                         def do_GET(self):
+                            if self.path.startswith("/proof"):
+                                query = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+                                if "value" in query:
+                                    with open(PROOF, "w", encoding="utf-8") as stream:
+                                        stream.write(query["value"][0])
+                                try:
+                                    with open(PROOF, "r", encoding="utf-8") as stream:
+                                        value = stream.read()
+                                except FileNotFoundError:
+                                    value = ""
+                                body = json.dumps({"persistent_proof": value}).encode()
+                                self.send_response(200)
+                                self.send_header("Content-Type", "application/json")
+                                self.send_header("Content-Length", str(len(body)))
+                                self.end_headers()
+                                self.wfile.write(body)
+                                return
                             try:
                                 with open(COUNTER, "r", encoding="utf-8") as stream:
                                     count = int(stream.read().strip() or "0")
