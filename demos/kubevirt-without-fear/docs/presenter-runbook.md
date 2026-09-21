@@ -12,7 +12,7 @@ Prove that a single OpenShift control plane can deploy and operate a hybrid appl
 | Unified inventory | 1 minute | VM, VMI, DataVolume, Deployment, Pods, Services, and Route share the API surface. |
 | Application request | 1 minute | Container-to-VM DNS and service connectivity work. |
 | VM/VMI lifecycle | 2 minutes | Desired state is separate from the current runtime instance. |
-| Recovery and persistence | 3 minutes | VMI recreation restores service and preserves disk state. |
+| Recovery and persistence | 3 minutes | VMI recreation restores service and returns the exact marker written to disk. |
 | Optional live migration | 2–4 minutes | Mobility works when the platform reports the VMI eligible. |
 | Conclusion | 1 minute | Common control plane, explicit workload constraints. |
 
@@ -25,6 +25,8 @@ Prove that a single OpenShift control plane can deploy and operate a hybrid appl
 5. Open the Route in a browser and keep a terminal at 140% zoom.
 6. If live migration matters, verify `LiveMigratable=True` and test the target storage and network path.
 7. Keep screenshots of the inventory, application page, old/new VMI UIDs, and migration result as a fallback.
+
+If presenting a real MTV pilot, show its migration evidence from the separate MTV runbook first. The scripted VM is a fresh example of the **target operating model**, not an MTV-migrated guest.
 
 ## Talk track
 
@@ -42,7 +44,7 @@ Prove that a single OpenShift control plane can deploy and operate a hybrid appl
 
 ### Recovery
 
-“I am deleting the runtime instance, not the VirtualMachine definition. The controller creates a replacement VMI. The application returns, and the counter continues because the disk is persistent.”
+“I am deleting the runtime instance in this disposable namespace, not the VirtualMachine definition. The controller creates a replacement VMI. The application returns, and the unique marker written to the VM boot disk is still there.”
 
 ### Live migration
 
