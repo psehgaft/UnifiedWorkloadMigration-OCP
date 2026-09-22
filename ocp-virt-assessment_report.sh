@@ -1,9 +1,8 @@
 #!/bin/bash
 # ==============================================================================
 # OpenShift Production Readiness Assessment & Migration Manifest Generator
-# Target OpenShift Version: 4.18+
+# Target OpenShift Version: 4.20+
 # Execution Mode: Read-Only Audit & YAML Generation (No cluster changes applied)
-# Language: English (Documentation, Comments, and Output Logs)
 # ==============================================================================
 
 set -u
